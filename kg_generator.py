@@ -100,7 +100,7 @@ for index, row in df.iterrows():
 
     for triple in output:
         try:        
-            output.loc[len(df)] = (
+            output_df.loc[len(output_df)] = (
                 output["head"],
                 output["tail"],
                 output["relationship"],
