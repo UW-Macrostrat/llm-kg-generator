@@ -25,25 +25,27 @@ class Worker(workerserver_pb2_grpc.WorkerServerServicer):
         request: workerserver_pb2.ParagraphRequest,
         context: grpc.aio.ServicerContext,
     ) -> workerserver_pb2.ParagraphResponse:
+        
         data = {
             "temperature": 0.0,
-            "prompt": PROMPT.format(input=request.paragraph),
+            "prompt": PROMPT.format(paragraph=request.paragraph),
         }
 
-        response = requests.post(f"llm_backend_{HOST_NAME}_{GPU_ID}:8080", json=data)
+        response = requests.post(f"http://llm_backend_{HOST_NAME}_{GPU_ID}:8080/completion", json=data)
 
         try:
             response_json = json.loads(response.json()["content"])
         except:
-            print("Error: LLM output cannot be parsed.")
-            return workerserver_pb2.ParagraphResponse(status=False)
-
-        if isinstance(response_json, list):
-            print("Error: LLM output cannot be parsed.")
-            return workerserver_pb2.ParagraphResponse(status=False)
+            logging.info("Error: LLM output cannot be parsed.")
+            return workerserver_pb2.ParagraphResponse(error=True)
+        
+        if isinstance(response_json, list) or not "triplets" in response_json:
+            logging.info("Error: LLM output cannot be parsed.")
+            return workerserver_pb2.ParagraphResponse(error=True)
 
         relationship_list = []
-        for triplet in response_json:
+        
+        for triplet in response_json["triplets"]:
             try:
                 if triplet["relationship"] in VALID_RELATIONSHIPS:
                     relationship_list.append(
@@ -53,12 +55,12 @@ class Worker(workerserver_pb2_grpc.WorkerServerServicer):
                             relationship_type=triplet["relationship"],
                         )
                     )
-            except KeyError:
-                print("Error: Trplet cannot be parsed.")
+            except:
+                logging.info("Error: Triplet cannot be parsed.")
                 continue
 
         return workerserver_pb2.ParagraphResponse(
-            status=True, relationships=relationship_list, model_used=MODEL_NAME
+            error=False, relationships=relationship_list, model_used=MODEL_NAME
         )
 
     async def Heartbeat(
@@ -71,14 +73,13 @@ class Worker(workerserver_pb2_grpc.WorkerServerServicer):
 
 async def serve() -> None:
     server = grpc.aio.server()
-
-    worker = Worker()
-
-    workerserver_pb2_grpc.add_WorkerServerServicer_to_server(worker, server)
-
+    workerserver_pb2_grpc.add_WorkerServerServicer_to_server(Worker(), server)
     listen_addr = "[::]:50051"
     server.add_insecure_port(listen_addr)
-
     logging.info("Starting server on %s", listen_addr)
     await server.start()
     await server.wait_for_termination()
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(serve())

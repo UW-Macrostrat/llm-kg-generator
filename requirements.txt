@@ -9,6 +9,8 @@ decorator==5.1.1
 executing==2.0.1
 fastparquet==2024.2.0
 fsspec==2024.3.1
+grpcio==1.62.1
+grpcio-tools==1.62.1
 idna==3.6
 ipykernel==6.29.2
 ipython==8.21.0
@@ -24,6 +26,7 @@ parso==0.8.3
 pexpect==4.9.0
 platformdirs==4.2.0
 prompt-toolkit==3.0.43
+protobuf==4.25.3
 psutil==5.9.8
 ptyprocess==0.7.0
 pure-eval==0.2.2

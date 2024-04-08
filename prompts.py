@@ -79,6 +79,11 @@ J. D. Love, 1956, Wyoming Geol. Assoc. Guidebook 11th Ann. Field Conf., p. 81-82
   ]
 }}
 <|END_OF_TURN_TOKEN|><|START_OF_TURN_TOKEN|><|USER_TOKEN|>
+Be sure that all triplets have one of these relationships:
+    "stratigraphic unit has lithology of"
+    "lithology has color of"
+
+Paragraph:
 {paragraph}
 <|END_OF_TURN_TOKEN|><|CHATBOT_TOKEN|>
 """
