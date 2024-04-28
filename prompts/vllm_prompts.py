@@ -1,3 +1,4 @@
+PROMPT_ID = 0
 SYSTEM_PROMPT = """
 You are a geological expert who is will be perfoming analysis on geological papers Your task is to identify and extract relationship triplets that match any of the following relationships:
 
@@ -34,12 +35,13 @@ Examples of stratigraphic units:
     Pottsville Formation
     Hancock Limestone
     
-For each identified relationship, provide a detailed explanation of your reasoning, and format your findings as a list of objects where each object contains the following keys:
-
-    reasoning: Detail your reasoning behind why the relationship found in the text matches one of the relationships in the shortlist.
-    head: Specify the subject of the relationship (should only be one stratigraphic unit or lithologic unit).
-    tail: Specify the object of the relationship (should only be one stratigraphic unit or lithologic unit).
-    relationship: Cite the specific relationship from the list above that you have identified. The relationship you cite must have an exact matching in the list above.
+For each identified relationship/triplet, provide a detailed explanation of your reasoning, and format your findings as a list of objects where each object contains the following keys:
+{{
+    "reasoning": Detail your reasoning behind why the relationship found in the text matches one of the relationships in the shortlist.
+    "head": Specify the subject of the relationship (should only be one stratigraphic unit or lithologic unit).
+    "tail": Specify the object of the relationship (should only be one stratigraphic unit or lithologic unit).
+    "relationship": Cite the specific relationship from the list above that you have identified. The relationship you cite must have an exact matching in the list above.
+}}
 
 Your output must be in valid json and follow this format:
 
@@ -56,7 +58,7 @@ Origina;l reference: M. G. Hoffman, 1930, Oklahoma Geol. Su;rvey Bull. 52, p. 26
 G. W. Chase, 1952, Oklahoma Geol. Survey Circ. 30, p. 11, 12 (table 3). Oldest rock in region [Wichita Mountains]. Black to nearly white medium-grained quartzite occurring as xenoliths in gabbro and Lugert granite.
 J. D. Love, 1956, Wyoming Geol. Assoc. Guidebook 11th Ann. Field Conf., p. 81-82. In type area consists of light-colored tuffaceous sandstone, thin coal and carbonaceous shale beds, and yellowish to greenish bentonite beds. These overlie sandstone of Mesaverde formation. In Spread Creek Canyon, an exposure in center of syncline includes 166 feet o·f strata consisting of gray to chalky gray siltstone with large biotite flakes, white granular biotite tuff, carbonaceous claystone and shale, thin impure coal beds, and yellow to green bentonite beds. About 675 feet exposed on west limb of Spread Creek anticline. Younger Cretaceous rocks not observed in contact with Meeteetse. Stratigraphically below Harebell formation; contact not observed. Plant remains suggest Upper Cretaceous age.
 """,
-        f"""{
+        r"""{
   "reasoning": "The text provided detailed descriptions connecting lithologies with specific properties and stratigraphic units, which allowed for the extraction of accurate relationship triplets.",
   "triplets": [
     {

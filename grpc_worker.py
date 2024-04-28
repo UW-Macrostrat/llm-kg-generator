@@ -10,7 +10,7 @@ import asyncio
 import json
 import logging
 
-from prompts import PROMPT
+from prompts.command_r_prompts import PROMPT
 
 GPU_ID = os.environ["GPU_ID"]
 HOST_NAME = os.environ["HOST_NAME"]
