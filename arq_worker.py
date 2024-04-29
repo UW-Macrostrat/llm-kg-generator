@@ -1,6 +1,7 @@
 from openai import AsyncOpenAI
 import os
 import asyncio
+import time
 from httpx import AsyncClient, HTTPError
 import json
 from arq.connections import RedisSettings
@@ -19,12 +20,9 @@ REDIS_SETTINGS = RedisSettings(
     password=REDIS_PASSWORD,  
 )
 
-# RESULT_ENDPOINT = os.getenv("REDIS_HOST", "http://cosmos0003.chtc.wisc.edu:9543/record_run")
-RESULT_ENDPOINT = os.getenv("RESULT_ENDPOINT", "http://cosmos0001.chtc.wisc.edu:8060/print_json")
+RESULT_ENDPOINT = os.getenv("RESULT_ENDPOINT")
 
-RUN_ID = os.getenv("RUN_ID", "llm_kg_generator_2024-04-15_13:20:43.302554")
-PIPELINE_ID = os.getenv("PIPELINE_ID", "0")
-MODEL_NAME = os.getenv("MODEL_NAME")
+MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Meta-Llama-3-8B-Instruct")
 MODEL_ID = f"{MODEL_NAME}_PROMPT_{PROMPT_ID}"
 
 class RelationshipType(str, Enum):
@@ -75,8 +73,9 @@ async def startup(ctx: dict):
     ctx["openai_client"] = AsyncOpenAI(
         base_url="http://127.0.0.1:8000/v1",
         api_key="EMPTY",
+        timeout=None
     )   
-    ctx["weaviate"] = WeaviateWrapper("http://cosmos0001.chtc.wisc.edu:8080", os.getenv("WEAVIATE_API_KEY"))
+    ctx["weaviate"] = WeaviateWrapper(f"http://{os.getenv('WEAVIATE_HOST')}:{os.getenv('WEAVIATE_PORT')}", os.getenv("WEAVIATE_API_KEY"))
     ctx["httpx_client"] = AsyncClient()
     
     # process prompts into chat template
@@ -95,10 +94,19 @@ async def startup(ctx: dict):
             response.raise_for_status()
             break
         except HTTPError:
-            # print(f"WORKER: Failed to connect to vLLM instance.")
-            pass
-            
-        await asyncio.sleep(5)
+            await asyncio.sleep(5)
+
+    # warmup request
+    await ctx["openai_client"].chat.completions.create(
+        model=MODEL_NAME,
+        messages=ctx["prompt"], 
+        temperature=0.0,
+        extra_body={
+            "guided_json": json.dumps(ctx["parser"]),
+            "guided_decoding_backend": "outlines",
+            "stop_token_ids": [128009] # need to add this since there is a bug with llama 3 tokenizer
+        } 
+    )
 
     print("WORKER: Ready to accept jobs.")
     
@@ -132,7 +140,7 @@ async def request_vllm(ctx: dict, paragraph_data: WeaviateText) -> ParagraphResu
         print(f"WORKER: Error validating LLM output: {e}")
         return None
 
-async def store_results(ctx: dict, output_list: list[ParagraphResult]):
+async def store_results(ctx: dict, output_list: list[ParagraphResult], run_metadata: dict):
     # convert results into json and post to an endpoint
     serialized_results = []
     for paragraph_output in output_list:
@@ -144,15 +152,20 @@ async def store_results(ctx: dict, output_list: list[ParagraphResult]):
     if serialized_results:
         await ctx["httpx_client"].post(
             RESULT_ENDPOINT, 
+            headers={
+                "Content-Type": "application/json"
+            },
             content=json.dumps({
-                "run_id" : RUN_ID,
-                "extraction_pipeline_id" : PIPELINE_ID,
+                "run_id" : run_metadata["run_id"],
+                "extraction_pipeline_id" : run_metadata["pipeline_id"],
                 "model_id": MODEL_ID,
                 "results": serialized_results
-            })
+            }, ensure_ascii=False).encode("ascii", errors="ignore").decode() # remove non ascii characters
         )
+        
+        
 
-async def process_paragraphs(ctx: dict, paragraph_batch: list[str]):
+async def process_paragraphs(ctx: dict, paragraph_batch: list[str], run_metadata: dict):
     # pull paragraph text from Weaviate and extract triplets using the LLM
     tasks = []
     for paragraph_data in ctx["weaviate"].get_paragraphs_for_ids(paragraph_batch):
@@ -161,14 +174,14 @@ async def process_paragraphs(ctx: dict, paragraph_batch: list[str]):
     output_list = await asyncio.gather(*tasks)
     
     # serialize results for batch and store in Macrostrat endpoint
-    await store_results(ctx, output_list)
+    await store_results(ctx, output_list, run_metadata)
 
 class WorkerSettings:
     redis_settings = REDIS_SETTINGS
     functions = [process_paragraphs]
     on_startup = startup
     on_shutdown = shutdown
-    max_jobs = 10
+    max_jobs = 3
 
 async def main():
     # demo run of worker on 2 paragraphs
