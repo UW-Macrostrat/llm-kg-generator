@@ -1,7 +1,7 @@
 FROM vllm/vllm-openai
 
 # install dependencies
-RUN pip install openai arq pydantic "weaviate-client==3.*"
+RUN pip install openai arq pydantic "weaviate-client==3.*" devtools
 
 # default environmental variables
 

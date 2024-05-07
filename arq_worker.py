@@ -9,6 +9,7 @@ from prompts.vllm_prompts import SYSTEM_PROMPT, CONTEXT, PROMPT_ID
 from enum import Enum
 from pydantic import BaseModel
 from typing import List
+from devtools import pprint
 from wrapper_classes.weaviate_wrapper import WeaviateWrapper, WeaviateText
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
@@ -140,7 +141,7 @@ async def request_vllm(ctx: dict, paragraph_data: WeaviateText) -> ParagraphResu
         print(f"WORKER: Error validating LLM output: {e}")
         return None
 
-async def store_results(ctx: dict, output_list: list[ParagraphResult], run_metadata: dict):
+async def store_results(ctx: dict, output_list: list[ParagraphResult], run_metadata: dict, post_results: bool):
     # convert results into json and post to an endpoint
     serialized_results = []
     for paragraph_output in output_list:
@@ -149,23 +150,27 @@ async def store_results(ctx: dict, output_list: list[ParagraphResult], run_metad
             serialized_results.append(serialized_output)
     
     # post to Macrostrat endpoint if any triplets have been extracted in this batch
-    if serialized_results:
-        await ctx["httpx_client"].post(
-            RESULT_ENDPOINT, 
-            headers={
-                "Content-Type": "application/json"
-            },
-            content=json.dumps({
-                "run_id" : run_metadata["run_id"],
-                "extraction_pipeline_id" : run_metadata["pipeline_id"],
-                "model_id": MODEL_ID,
-                "results": serialized_results
-            }, ensure_ascii=False).encode("ascii", errors="ignore").decode() # remove non ascii characters
-        )
-        
+    if post_results:
+        if serialized_results:
+                await ctx["httpx_client"].post(
+                    RESULT_ENDPOINT, 
+                    headers={
+                        "Content-Type": "application/json"
+                    },
+                    content=json.dumps({
+                        "run_id" : run_metadata["run_id"],
+                        "extraction_pipeline_id" : run_metadata["pipeline_id"],
+                        "model_id": MODEL_ID,
+                        "results": serialized_results
+                    }, ensure_ascii=False).encode("ascii", errors="ignore").decode() # remove non ascii characters
+                )
+    else:
+        print("pydantic output:")
+        pprint(output_list)
+            
         
 
-async def process_paragraphs(ctx: dict, paragraph_batch: list[str], run_metadata: dict):
+async def process_paragraphs(ctx: dict, paragraph_batch: list[str], run_metadata: dict, post_results: bool = True):
     # pull paragraph text from Weaviate and extract triplets using the LLM
     tasks = []
     for paragraph_data in ctx["weaviate"].get_paragraphs_for_ids(paragraph_batch):
@@ -174,7 +179,7 @@ async def process_paragraphs(ctx: dict, paragraph_batch: list[str], run_metadata
     output_list = await asyncio.gather(*tasks)
     
     # serialize results for batch and store in Macrostrat endpoint
-    await store_results(ctx, output_list, run_metadata)
+    await store_results(ctx, output_list, run_metadata, post_results)
 
 class WorkerSettings:
     redis_settings = REDIS_SETTINGS
@@ -187,7 +192,7 @@ async def main():
     # demo run of worker on 2 paragraphs
     ctx = {}
     await startup(ctx)
-    await process_paragraphs(ctx, ["00000085-2145-4b37-b963-8c80d21b6964", "955616ce-f846-4665-9c64-d4709a34680d"])
+    await process_paragraphs(ctx, ["0f8ce52f-8f0e-4b58-a6a6-7515a9965526", "53947580-833f-4eb3-8413-efbbddfa890b"], {}, False)
     await shutdown(ctx)
 
 if __name__ == "__main__":
