@@ -6,6 +6,7 @@ import json
 from pydantic import BaseModel
 import logging
 
+
 class VLLMWrapper:
     def __init__(self, model_name: str, schema: BaseModel) -> None:
         self.model_name = model_name
@@ -34,7 +35,7 @@ class VLLMWrapper:
 
     async def guided_generate(self, prompt: dict, constrained: bool = False) -> BaseModel:
         extra_body = {
-            "stop_token_ids": [128001, 128009] # need to add this since there is a bug with llama 3 tokenizer
+            "stop_token_ids": [128001, 128009]  # need to add this since there is a bug with llama 3 tokenizer
         }
 
         if constrained:

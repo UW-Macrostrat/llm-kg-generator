@@ -3,7 +3,12 @@ import asyncio
 import argparse
 import httpx
 import json
-from prompts.map_descrip_prompts import SYSTEM_PROMPT, PROMPT_ID, sample_description
+from prompts.map_descrip_prompts import (
+    SYSTEM_PROMPT,
+    CONTEXT,
+    PROMPT_ID,
+    sample_description,
+)
 from enum import Enum
 from pydantic import BaseModel
 from typing import List
@@ -19,6 +24,7 @@ RESULT_ENDPOINT = os.getenv("RESULT_ENDPOINT")
 MODEL_NAME = os.getenv("MODEL_NAME")
 MODEL_VERSION = PROMPT_ID
 
+
 class RelationshipType(str, Enum):
     lith_to_lith_type = "lithology has type of"
     att_grains = "lithology has grains of"
@@ -26,12 +32,13 @@ class RelationshipType(str, Enum):
     att_bedform = "lithology has bedform of"
     att_sed_structure = "lithology has sedimentary structure of"
 
+
 class Triplet(BaseModel):
     reasoning: str
     head: str
     tail: str
     relationship: RelationshipType
-    
+
     def serialize(self):
         return {
             "src": self.head,
@@ -39,31 +46,36 @@ class Triplet(BaseModel):
             "dst": self.tail,
         }
 
+
 class TripletList(BaseModel):
     reasoning: str
     triplets: List[Triplet]
-    
+
+
 class ParagraphResult(BaseModel):
     triplet_list: TripletList
     description: str
-    
+    prompt: str
+
     def serialize(self):
         return {
             "text": {
                 "paragraph_text": self.description,
             },
-            "relationships": [
-                triplet.serialize() for triplet in self.triplet_list.triplets
-            ],
+            "relationships": [triplet.serialize() for triplet in self.triplet_list.triplets],
         }
+
 
 async def startup(ctx: dict):
     ctx["httpx_client"] = httpx.AsyncClient()
-    
+
     # process prompts into chat template
     ctx["prompt"] = [
         {"role": "system", "content": SYSTEM_PROMPT},
     ]
+    for example in CONTEXT:
+        ctx["prompt"].append({"role": "user", "content": example[0]})
+        ctx["prompt"].append({"role": "assistant", "content": example[1]})
     ctx["liths"] = pd.read_csv("/vllm-workspace/prompts/liths.csv", header=None)
     ctx["lith_atts"] = pd.read_csv("/vllm-workspace/prompts/lith_atts.csv", header=None)
 
@@ -72,93 +84,105 @@ async def startup(ctx: dict):
     await ctx["vllm"].startup()
 
     logging.info("Ready to accept jobs.")
-    
+
+
 async def shutdown(ctx: dict):
     await ctx["httpx_client"].aclose()
     await ctx["vllm"].shutdown()
 
+
 async def request_vllm(ctx: dict, description: str) -> ParagraphResult:
     # dynamically generate prompt by inserting lith and lith atts matches into the context
-    prompt = "Find the relevant triplets in the following text.\n"
+    prompt = "Find the relevant triplets in the following text."
+    prompt += "Your relationships must only include the lithologies and lithology attributes given below.\n"
     filtered_liths = ctx["liths"][ctx["liths"].iloc[:, 0].apply(lambda x: str(x) in description)]
     filtered_lith_atts = ctx["lith_atts"][ctx["lith_atts"].iloc[:, 0].apply(lambda x: str(x) in description)]
-    if not filtered_liths.empty:
-        prompt += "Here are relevant lithologies found in the text:\n"
-        for _, row in filtered_liths.iterrows():
-            prompt += row[0] + "\n"
-    if not filtered_lith_atts.empty:
-        prompt += "Here are relevant lithology attributes found in the text:\n"
-        for _, row in filtered_lith_atts.iterrows():
-            prompt += row[0] + "\t" + row[1] + "\n"
-            
     # TODO: change? currently skipping descriptions with no matches
-    if filtered_liths.empty and filtered_lith_atts.empty:
+    if filtered_liths.empty or filtered_lith_atts.empty:
         return None
-    
-    messages = ctx["prompt"].copy() 
-    messages.append({"role": "user", "content": prompt})
-        
-    output = await ctx["vllm"].guided_generate(messages)
-    
-    pprint(output)
+    prompt += "Here are relevant lithologies found in the text:\n"
+    for _, row in filtered_liths.iterrows():
+        prompt += row[0] + "\n"
+    prompt += "Here are relevant lithology attributes found in the text (attribute and attribute type):\n"
+    for _, row in filtered_lith_atts.iterrows():
+        prompt += row[0] + "\t" + row[1] + "\n"
+    prompt += "\n"
+    prompt += "###\n"
+    prompt += description
 
-    if not output.triplets:
+    messages = ctx["prompt"].copy()
+    messages.append({"role": "user", "content": prompt})
+
+    output = await ctx["vllm"].guided_generate(messages)
+    if not output or not output.triplets:
         return None
     else:
-        return ParagraphResult(triplet_list=output, description=description)
+        return ParagraphResult(triplet_list=output, description=description, prompt=prompt)
 
-async def store_results(ctx: dict, output_list: list[str], run_metadata: dict, return_results: bool) -> dict | None:
+
+async def store_results(ctx: dict, output_list: list[ParagraphResult], run_metadata: dict, return_results: bool) -> dict | None:
     # convert results into json and post to an endpoint
+    pprint(output_list)
     serialized_results = []
     for paragraph_output in output_list:
         if paragraph_output is not None:
             serialized_output = paragraph_output.serialize()
             serialized_results.append(serialized_output)
-    
+
     # post to Macrostrat endpoint if any triplets have been extracted in this batch
     if return_results:
         return {
-                    "run_id" : run_metadata["RunID"],
-                    "extraction_pipeline_id" : run_metadata["PipelineId"],
-                    "model_name": MODEL_NAME,
-                    "model_version": MODEL_VERSION,
-                    "results": serialized_results
-                }
+            "run_id": run_metadata["RunID"],
+            "extraction_pipeline_id": run_metadata["PipelineId"],
+            "model_name": MODEL_NAME,
+            "model_version": MODEL_VERSION,
+            "results": serialized_results,
+        }
     else:
         if serialized_results:
             try:
                 await ctx["httpx_client"].post(
-                    RESULT_ENDPOINT, 
-                    headers={
-                        "Content-Type": "application/json"
-                    },
-                    content=json.dumps({
-                        "run_id" : run_metadata["RunID"],
-                        "extraction_pipeline_id" : run_metadata["PipelineId"],
-                        "model_name": MODEL_NAME,
-                        "model_version": MODEL_VERSION,
-                        "results": serialized_results
-                    }, ensure_ascii=False).encode("ascii", errors="ignore").decode() # remove non ascii characters
+                    RESULT_ENDPOINT,
+                    headers={"Content-Type": "application/json"},
+                    content=json.dumps(
+                        {
+                            "run_id": run_metadata["RunID"],
+                            "extraction_pipeline_id": run_metadata["PipelineId"],
+                            "model_name": MODEL_NAME,
+                            "model_version": MODEL_VERSION,
+                            "results": serialized_results,
+                        },
+                        ensure_ascii=False,
+                    )
+                    .encode("ascii", errors="ignore")
+                    .decode(),  # remove non ascii characters
                 )
             except httpx.HTTPError:
                 logging.error("Failed to connect to result endpoint.")
                 exit(1)
-            
-async def process_descriptions(ctx: dict, description_batch: list[str], run_metadata: dict, return_results: bool = False) -> dict | None:
+
+
+async def process_descriptions(
+    ctx: dict,
+    description_batch: list[str],
+    run_metadata: dict,
+    return_results: bool = False,
+) -> dict | None:
     # pull paragraph text from Weaviate and extract triplets using the LLM
     tasks = []
     for description in description_batch:
         task = request_vllm(ctx, description)
         tasks.append(task)
     output_list = await asyncio.gather(*tasks)
-    
+
     # serialize results for batch and store in Macrostrat endpoint
     result = await store_results(ctx, output_list, run_metadata, return_results)
     if return_results:
         return result
 
+
 async def main(worker: bool):
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout)  
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
     if worker:
@@ -175,6 +199,7 @@ async def main(worker: bool):
         output = await process_descriptions(ctx, [sample_description], dummy_metadata, True)
         print(json.dumps(output, indent=4))
         await shutdown(ctx)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
