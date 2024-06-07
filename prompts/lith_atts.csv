@@ -1,0 +1,178 @@
+lenticular,bedform
+mounds,bedform
+tabular,bedform
+thinly bedded,bedform
+thickly bedded,bedform
+regularly bedded,bedform
+irregularly bedded,bedform
+wavy bedded,bedform
+massive ,bedform
+desiccation cracks,sedimentary structure
+birds eye,sedimentary structure
+salt hoppers,sedimentary structure
+ripple laminations,sedimentary structure
+climbing ripples,sedimentary structure
+algal laminations,sedimentary structure
+tabular cross beds,sedimentary structure
+cross-bedded,sedimentary structure
+trough cross beds,sedimentary structure
+hummocky cross stratification,sedimentary structure
+symmetric ripples,sedimentary structure
+asymmetric ripples,sedimentary structure
+dunes,sedimentary structure
+flaser beds,sedimentary structure
+laminated,sedimentary structure
+sole marks,sedimentary structure
+tool marks,sedimentary structure
+flute casts,sedimentary structure
+gutter casts,sedimentary structure
+load casts,sedimentary structure
+flame structures,sedimentary structure
+ball-and-pillow,sedimentary structure
+soft sedimentaryiment deformation,sedimentary structure
+graded-normal,sedimentary structure
+graded-inverse,sedimentary structure
+bioturbated,sedimentary structure
+bioturbated-weakly,sedimentary structure
+bioturbated-moderately,sedimentary structure
+bioturbated-thoroughly,sedimentary structure
+dish and pillar,sedimentary structure
+concretions-sideritic,sedimentary structure
+wrinkle structures,sedimentary structure
+concretions-calcareous,sedimentary structure
+nodular,sedimentary structure
+very fine,grains
+fine,grains
+medium,grains
+coarse,grains
+very coarse,grains
+granule,grains
+boulder,grains
+sorted,grains
+well sorted,grains
+poorly sorted,grains
+rounded,grains
+well rounded,grains
+subangular,grains
+angular,grains
+lithic,grains
+pegmatitic,grains
+porphyritic,grains
+argillaceous,lithology type
+shaly,lithology type
+black,color
+silty,lithology type
+sandy,lithology type
+arkosic,lithology type
+conglomeratic,lithology type
+gravelly,lithology type
+carbonaceous,lithology type
+petroliferous,lithology type
+micaceous,lithology type
+cherty,lithology type
+siliceous,lithology type
+ferruginous,lithology type
+hematitic,lithology type
+phosphatic,lithology type
+tuffaceous,lithology type
+stromatolitic,lithology type
+bentonitic,lithology type
+calcareous,lithology type
+diatomaceous,lithology type
+dolomitic,lithology type
+glauconitic,lithology type
+intraclastic,lithology type
+rip-up clasts,lithology type
+ooidal,lithology type
+peloidal,lithology type
+pisolitic,lithology type
+skeletal,lithology type
+flat-pebble,lithology type
+pyritic,lithology type
+sideritic,lithology type
+gypsiferous,lithology type
+quartz,lithology type
+olivine,lithology type
+feldspar,lithology type
+hornblende,lithology type
+amphibole,lithology type
+muscovite,lithology type
+biotite,lithology type
+mica,lithology type
+brown,color
+light brown,color
+dark brown,color
+gray,color
+light gray,color
+dark gray,color
+green,color
+greenish gray,color
+greenish blue,color
+purple,color
+red,color
+reddish brown,color
+white,color
+yellow,color
+blue,color
+bluish gray,color
+mottled,color
+light,color
+dark,color
+foliated,grains
+fluid escape structures,sedimentary structure
+thrombolitic,lithology type
+convolute bedding,sedimentary structure
+pebbly,grains
+chloritic,lithology type
+yellowish brown,color
+reddish gray,color
+yellowish gray,color
+brownish red,color
+brownish gray,color
+oolitic,grains
+tan,color
+pink,color
+aphanitic,grains
+phaneritic,grains
+manganese,lithology type
+felsic,lithology type
+mafic,lithology type
+concretions-ironstone,sedimentary structure
+oncolitic,sedimentary structure
+concretions-phosphatic,sedimentary structure
+bioclastic,lithology type
+burrowed,sedimentary structure
+concretionary,sedimentary structure
+graded bed,sedimentary structure
+reverse graded,sedimentary structure
+inverse graded,sedimentary structure
+feldspathic,grains
+swaley cross stratification,sedimentary structure
+mud cracks,sedimentary structure
+muddy,grains
+arenaceous,grains
+clayey,grains
+pelitic,grains
+fenestral,sedimentary structure
+organic,grains
+poorly washed,grains
+cross stratification,sedimentary structure
+hummocky and swaley cross stratification,sedimentary structure
+fossiliferous,grains
+parting lineation,sedimentary structure
+chossy,lithology type
+encrinitic,lithology type
+vesicular,lithology type
+amygdaloidal,lithology type
+botryoidal,lithology type
+vuggy,lithology type
+saprolitic,lithology type
+diatom,grains
+radiolarian,grains
+nannofossil,grains
+foraminifer,grains
+ultramafic,lithology type
+basaltic,lithology type
+serpentinized,lithology type
+zeolitic,lithology type
+spicular,lithology type
