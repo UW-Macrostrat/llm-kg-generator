@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package job_manager;
+option go_package = "job_manager/pb";
+
+service JobManager {
+  rpc GetJob (GetJobRequest) returns (GetJobResponse);
+  rpc FinishJob (FinishJobRequest) returns (FinishJobResponse);
+  rpc UpdateHealth (UpdateHealthRequest) returns (UpdateHealthResponse);
+  rpc GetMetadata (GetMetadataRequest) returns (GetMetadataResponse);
+}
+
+enum JobType {
+  wait = 0;
+  batch = 1;
+  on_demand = 2;
+}
+
+message GetJobRequest {
+}
+
+message GetJobResponse {
+  JobType type = 1;
+  uint64 id = 2;
+  oneof job_data {
+    MapDescriptionJob map_description_data = 3;
+    WeaviateJob weaviate_data = 4;
+    TestJob test_data = 5;
+  }
+}
+
+message MapDescriptionJob {
+  repeated MapDescription descriptions = 1;
+}
+
+message MapDescription {
+  uint64 legend_id = 1;
+  string text = 2;
+}
+
+message WeaviateJob {
+  repeated string paragraph_ids = 1;
+}
+
+message TestJob {
+  repeated string paragraphs = 1;
+}
+
+message FinishJobRequest {
+  uint64 id = 1;
+}
+
+message FinishJobResponse {
+}
+
+message UpdateHealthRequest {
+  uint64 id = 1;
+}
+
+message UpdateHealthResponse {
+}
+
+message GetMetadataRequest {
+}
+
+message GetMetadataResponse {
+  string run_id = 1;
+  string pipeline_id = 2;
+  uint32 health_timeout = 3;
+}
+

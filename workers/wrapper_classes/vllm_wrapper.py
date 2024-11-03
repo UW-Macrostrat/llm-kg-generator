@@ -1,10 +1,10 @@
-
 from openai import AsyncOpenAI
 import asyncio
 import httpx
 import json
 from pydantic import BaseModel
 import logging
+import openai
 
 
 class VLLMWrapper:
@@ -16,7 +16,7 @@ class VLLMWrapper:
         )
         self.schema = schema
         self.json_schema = schema.model_json_schema()
-        
+
     async def startup(self) -> None:
         # wait for vLLM server to start
         async with httpx.AsyncClient() as httpx_client:
@@ -29,31 +29,37 @@ class VLLMWrapper:
                     await asyncio.sleep(5)
 
         logging.info("VLLM server ready.")
-    
+
     async def shutdown(self):
         await self.client.close()
 
     async def guided_generate(self, prompt: dict, constrained: bool = False) -> BaseModel:
-        extra_body = {
-            "stop_token_ids": [128001, 128009]  # need to add this since there is a bug with llama 3 tokenizer
-        }
+        extra_body = {}
+        extra_body["stop_token_ids"] = [128001, 128009] # need to add this since there is a bug with llama 3 tokenizer
 
         if constrained:
             extra_body["guided_json"] = json.dumps(self.json_schema)
-            extra_body["guided_decoding_backend"] = "lm-format-enforcer"
+            # extra_body["guided_decoding_backend"] = "lm-format-enforcer"
 
-        llm_output = await self.client.chat.completions.create(
-            model=self.model_name,
-            messages=prompt, 
-            temperature=0.0,
-            max_tokens=1024,
-            extra_body=extra_body
-        )   
-
-        # validate llm output
         try:
+            llm_output = await self.client.chat.completions.create(
+                model=self.model_name, 
+                messages=prompt, 
+                temperature=0.0, 
+                max_tokens=1024, 
+                extra_body=extra_body
+            )
+
+            # validate llm output
             validated_output = self.schema.model_validate_json(llm_output.choices[0].message.content)
             return validated_output
+        except openai.BadRequestError as e:
+            if e.code == 400 and "maximum context length" in e.message:
+                logging.warning("BadRequestError: %s", e.message)
+                logging.warning("reached maximum length: %s", prompt)
+                return None
+            else:
+                raise
         except ValueError:
             # retry with constrained encoding
             if not constrained:

@@ -2,7 +2,7 @@ JobBatchName            = "LLM worker"
 
 # Environment
 universe                = docker
-docker_image            = ghcr.io/bxia68/llm_kg_generator:dev037
+docker_image            = ghcr.io/bxia68/llm_kg_generator:dev056
 docker_network_type     = host
 
 # Artefact
@@ -14,20 +14,21 @@ transfer_output_files   = ""
 
 # Logging
 stream_output           = true
+stream_error            = true
 output                  = condor_log/output.$(Cluster)-$(Process).txt
 error                   = condor_log/error.$(Cluster)-$(Process).txt
 log                     = condor_log/log.$(Cluster)-$(Process).txt
 
 # Compute resources
-request_cpus            = 1
-request_memory          = 32GB
+request_cpus            = 2
+request_memory          = 8GB
 request_disk            = 32GB
 
 # Extra GPU settings
 request_gpus            = 1
 require_gpus            = (Capability >= 8.0) && (GlobalMemoryMb >= 20000)
-Requirements            = (Target.CUDADriverVersion >= 12.1)
+Requirements            = (Target.CUDADriverVersion >= 12.4)
 +WantGPULab             = true
 +GPUJobLength           = "short"
 
-queue 2
+queue 1
