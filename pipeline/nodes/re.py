@@ -32,7 +32,14 @@ def re(state: PipelineState, runtime: Runtime[Context]):
             result.rejected.extend(rejected)
             ctx.log.rejections(result.source_id, rejected)
             if output["relations"] and not relations:
-                raise ValueError("RE proposed relations but none survived validation; see rejection details")
+                ctx.log.event(
+                    "WARNING",
+                    "all_relations_rejected",
+                    stage="re",
+                    source_id=result.source_id,
+                    message="Continuing with validated entities and matches only.",
+                    rejected=len(rejected),
+                )
             if len(output["relations"]) == ctx.constraints.max_relations:
                 ctx.log.event("WARNING", "relation_limit_reached", stage="re", source_id=result.source_id,
                               message="Output reached max_relations; additional relations may have been omitted")
