@@ -1,0 +1,97 @@
+{
+  "run_id": "sample_source_23578_matches_001",
+  "model_name": "sample-upload-test",
+  "model_version": "1",
+  "extraction_pipeline_id": "0",
+  "results": [
+    {
+      "text": {
+        "text_type": "map_descriptions",
+        "paragraph_text": "Sandstone and carbonaceous mudstone with interbedded conglomerate and thin coal lenses.",
+        "legend_id": 14082
+      },
+      "just_entities": [
+        {
+          "entity": "Sandstone",
+          "entity_type": "lith",
+          "start_idx": 0,
+          "end_idx": 9,
+          "macrostrat_terms_id": 8199
+        },
+        {
+          "entity": "carbonaceous",
+          "entity_type": "lith_att",
+          "start_idx": 14,
+          "end_idx": 26
+        },
+        {
+          "entity": "mudstone",
+          "entity_type": "lith",
+          "start_idx": 27,
+          "end_idx": 35,
+          "macrostrat_terms_id": 8196
+        },
+        {
+          "entity": "interbedded",
+          "entity_type": "lith_att",
+          "start_idx": 41,
+          "end_idx": 52
+        },
+        {
+          "entity": "conglomerate",
+          "entity_type": "lith",
+          "start_idx": 53,
+          "end_idx": 65
+        },
+        {
+          "entity": "thin",
+          "entity_type": "lith_att",
+          "start_idx": 70,
+          "end_idx": 74
+        },
+        {
+          "entity": "coal",
+          "entity_type": "lith",
+          "start_idx": 75,
+          "end_idx": 79,
+          "macrostrat_terms_id": 8226
+        },
+        {
+          "entity": "lenses",
+          "entity_type": "form",
+          "start_idx": 80,
+          "end_idx": 86
+        }
+      ],
+      "relationships": [
+        {
+          "src": "mudstone",
+          "dst": "carbonaceous",
+          "relationship_type": "lith_to_lith_att",
+          "src_start_idx": 27,
+          "src_end_idx": 35,
+          "dst_start_idx": 14,
+          "dst_end_idx": 26
+        },
+        {
+          "src": "conglomerate",
+          "dst": "interbedded",
+          "relationship_type": "lith_to_lith_att",
+          "src_start_idx": 53,
+          "src_end_idx": 65,
+          "dst_start_idx": 41,
+          "dst_end_idx": 52
+        },
+        {
+          "src": "coal",
+          "dst": "thin",
+          "relationship_type": "lith_to_lith_att",
+          "src_start_idx": 75,
+          "src_end_idx": 79,
+          "dst_start_idx": 70,
+          "dst_end_idx": 74
+        }
+      ]
+    }
+  ]
+}

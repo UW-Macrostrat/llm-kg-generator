@@ -1,0 +1,9 @@
+{
+  "status_code": 200,
+  "body": {
+    "success": "Successfully processed the run",
+    "data": {
+      "table_id": "None"
+    }
+  }
+}

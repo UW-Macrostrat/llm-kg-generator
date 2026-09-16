@@ -1,0 +1,115 @@
+{
+  "run_id": "sample_source_21344_matches_001",
+  "model_name": "sample-upload-test",
+  "model_version": "1",
+  "extraction_pipeline_id": "0",
+  "results": [
+    {
+      "text": {
+        "text_type": "weaviate_text",
+        "preprocessor_id": "haystack_v0.0.2",
+        "paper_id": "620e8f7dad0e9c819b0d5d69",
+        "hashed_text": "a3e3f7dc88527bc8becc21514882f17f468da87e740c5fac09403a40fb0d29f6",
+        "weaviate_id": "001af66f-5d93-4351-b5c7-fd69d0ac56e4",
+        "paragraph_text": "Mineralization is associated with veins and breccias in hornfels, which are part of the St Leon Formation. Metallic minerals are represented by pyrite and chalcopyrite. One hole drilled 325 m to the NW returned 2.3% Cu over 2.5 m and 1.2% Cu over 10 m. Mineralization is associated with a fault zone striking at 155. Dionne is located in the same area as number 6 cobalt vein Vronique and Guillaume showings and is described more extensively at item 9.0 entitled Exploration. The Veine  Ren was discovered by EX IN during a Beep Mat survey in 1988. The vein strikes 330 with a sub vertical dip. At its northern extremity, the massive chalcopyrite mineralization is up to 2 m in width, while farther east, the veins splits into 3 smaller veins, about 0.3 m wide and separated by 0.6 to 3 m of waste. Veins are made up of massive chalcopyrite with small amounts of secondary minerals, mainly malachite and azurite. In its north section, the vein is cut by a gabbro diorite sill. The veins are enclosed in a brecciated mudstone. The enclosing rocks were not affected by local metamorphism."
+      },
+      "just_entities": [
+        {
+          "entity": "hornfels",
+          "entity_type": "lith",
+          "start_idx": 56,
+          "end_idx": 64,
+          "macrostrat_terms_id": 8273
+        },
+        {
+          "entity": "St Leon Formation",
+          "entity_type": "strat_name",
+          "start_idx": 88,
+          "end_idx": 105
+        },
+        {
+          "entity": "pyrite",
+          "entity_type": "mineral",
+          "start_idx": 144,
+          "end_idx": 150
+        },
+        {
+          "entity": "chalcopyrite",
+          "entity_type": "mineral",
+          "start_idx": 155,
+          "end_idx": 167
+        },
+        {
+          "entity": "chalcopyrite",
+          "entity_type": "mineral",
+          "start_idx": 634,
+          "end_idx": 646
+        },
+        {
+          "entity": "chalcopyrite",
+          "entity_type": "mineral",
+          "start_idx": 828,
+          "end_idx": 840
+        },
+        {
+          "entity": "malachite",
+          "entity_type": "mineral",
+          "start_idx": 890,
+          "end_idx": 899
+        },
+        {
+          "entity": "azurite",
+          "entity_type": "mineral",
+          "start_idx": 904,
+          "end_idx": 911
+        },
+        {
+          "entity": "gabbro",
+          "entity_type": "lith",
+          "start_idx": 956,
+          "end_idx": 962,
+          "macrostrat_terms_id": 8243
+        },
+        {
+          "entity": "diorite",
+          "entity_type": "lith",
+          "start_idx": 963,
+          "end_idx": 970,
+          "macrostrat_terms_id": 8241
+        },
+        {
+          "entity": "brecciated",
+          "entity_type": "lith_att",
+          "start_idx": 1005,
+          "end_idx": 1015
+        },
+        {
+          "entity": "mudstone",
+          "entity_type": "lith",
+          "start_idx": 1016,
+          "end_idx": 1024
+        }
+      ],
+      "relationships": [
+        {
+          "src": "St Leon Formation",
+          "dst": "hornfels",
+          "relationship_type": "strat_name_to_lith",
+          "src_start_idx": 88,
+          "src_end_idx": 105,
+          "dst_start_idx": 56,
+          "dst_end_idx": 64
+        },
+        {
+          "src": "mudstone",
+          "dst": "brecciated",
+          "relationship_type": "lith_to_lith_att",
+          "src_start_idx": 1016,
+          "src_end_idx": 1024,
+          "dst_start_idx": 1005,
+          "dst_end_idx": 1015
+        }
+      ]
+    }
+  ]
+}
