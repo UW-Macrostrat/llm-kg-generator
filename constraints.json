@@ -1,0 +1,17 @@
+{
+  "version": "1",
+  "max_entities": 32,
+  "max_relations": 64,
+  "max_candidates": 1024,
+  "max_evidence_chars": 1200,
+  "max_incoming_relations": 1,
+  "allow_cycles": false,
+  "allow_self_relations": false,
+  "evidence_must_include_endpoints": true,
+  "min_relation_score": 0.0,
+  "ranking": {
+    "same_sentence": 0.5,
+    "proximity": 0.3,
+    "evidence_compactness": 0.2
+  }
+}
