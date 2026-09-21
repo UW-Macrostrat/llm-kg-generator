@@ -36,6 +36,8 @@ class Constraints(Contract):
     max_relations: int = Field(default=64, ge=1)
     max_candidates: int = Field(default=1024, ge=1)
     max_evidence_chars: int = Field(default=1200, ge=1)
+    local_candidates_same_sentence_only: bool = True
+    local_candidates_max_span_chars: int | None = Field(default=None, ge=1)
     max_incoming_relations: int | None = Field(default=1, ge=1)
     allow_cycles: bool = False
     allow_self_relations: bool = False
@@ -105,7 +107,6 @@ class Ontology(Contract):
 class EntityDraft(Contract):
     text: str = Field(min_length=1)
     entity_type: str = Field(min_length=1)
-    occurrence: int = Field(ge=0, description="Zero-based exact occurrence of text in the paragraph")
 
 
 class NEROutput(Contract):
@@ -148,8 +149,6 @@ class Candidate(Contract):
 
 class RelationDraft(Contract):
     candidate_id: str
-    evidence: str = Field(min_length=1)
-    evidence_occurrence: int = Field(ge=0)
 
 
 class REOutput(Contract):
