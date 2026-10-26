@@ -18,38 +18,60 @@ class Contract(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
 
 
-class RankingWeights(Contract):
-    same_sentence: float = Field(default=0.5, ge=0)
-    proximity: float = Field(default=0.3, ge=0)
-    evidence_compactness: float = Field(default=0.2, ge=0)
 
-    @model_validator(mode="after")
-    def positive_total(self) -> Self:
-        if sum(self.model_dump().values()) <= 0:
-            raise ValueError("At least one ranking weight must be positive")
-        return self
+class RankingWeights(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    same_sentence: float = 0.5
+    proximity: float = 0.3
+    evidence_compactness: float = 0.2
 
 
-class Constraints(Contract):
-    version: str = "1"
-    max_entities: int = Field(default=32, ge=1)
-    max_relations: int = Field(default=64, ge=1)
-    max_candidates: int = Field(default=1024, ge=1)
-    max_evidence_chars: int = Field(default=1200, ge=1)
+class Constraints(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+    )
+
+    # ---------------------------------------------------------
+    # Run / model metadata
+    # ---------------------------------------------------------
+
+    model_version: str = "1.0.0"
+    extraction_pipeline_id: str = "0"
+
+    # Optional explicit database IDs.
+    model_id: int | None = None
+    version_id: int | None = None
+
+    # ---------------------------------------------------------
+    # Extraction limits
+    # ---------------------------------------------------------
+
+    max_entities: int = 200
+    max_relations: int = 200
+    max_candidates: int = 10000
+    max_evidence_chars: int = 1200
+
+    # ---------------------------------------------------------
+    # Local candidate generation
+    # ---------------------------------------------------------
+
     local_candidates_same_sentence_only: bool = True
-    local_candidates_max_span_chars: int | None = Field(default=None, ge=1)
-    max_incoming_relations: int | None = Field(default=1, ge=1)
-    allow_cycles: bool = False
-    allow_self_relations: bool = False
-    evidence_must_include_endpoints: bool = True
-    min_relation_score: float = Field(default=0.0, ge=0, le=1)
-    ranking: RankingWeights = Field(default_factory=RankingWeights)
+    local_candidates_max_span_chars: int | None = 1200
 
-    @model_validator(mode="after")
-    def consistent_graph_rules(self) -> Self:
-        if self.allow_self_relations and not self.allow_cycles:
-            raise ValueError("Self relations are cycles; allow_cycles must also be true")
-        return self
+    # ---------------------------------------------------------
+    # Graph selection
+    # ---------------------------------------------------------
+
+    max_incoming_relations: int = 0
+    allow_cycles: bool = True
+    allow_self_relations: bool = False
+
+    evidence_must_include_endpoints: bool = True
+    min_relation_score: float = 0.0
+
+    ranking: RankingWeights = RankingWeights()
 
 
 class SourceText(Contract):
@@ -254,7 +276,7 @@ class RecordRunPayload(Contract):
     run_id: str
     extraction_pipeline_id: str
     model_name: str
-    model_version: int
+    model_version: str
     results: list[RecordResult] = Field(min_length=1)
 
 

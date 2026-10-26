@@ -27,7 +27,7 @@ class Config(BaseModel):
     source_url: str = "https://dev.macrostrat.org/api/pg/source_text"
     entity_url: str = "https://dev.macrostrat.org/api/pg/kg_entity_type"
     relationship_url: str = "https://dev.macrostrat.org/api/pg/kg_relationship_type"
-    record_run_url: str = "https://macrostrat-xdd.dev.svc.macrostrat.org/record_run"
+    record_run_url: str = "http://localhost:9543/record_run" # "https://macrostrat-xdd.dev.svc.macrostrat.org/record_run"
 
     source_api_token: SecretStr = SecretStr("")
     record_api_token: SecretStr = SecretStr("")
@@ -49,7 +49,6 @@ class Config(BaseModel):
 
     # Run metadata
     extraction_pipeline_id: str = "0"
-    model_version: int = 0
 
     # Output behavior
     dry_run: bool = True
@@ -236,17 +235,6 @@ def parse_args(argv=None) -> Config:
         ),
     )
 
-    parser.add_argument(
-        "--model-version",
-        type=int,
-        default=int(
-            os.getenv(
-                "MODEL_VERSION",
-                "0",
-            )
-        ),
-    )
-
     # Upload behavior
     uploads = parser.add_mutually_exclusive_group()
 
@@ -290,7 +278,7 @@ def parse_args(argv=None) -> Config:
             "",
         ),
         record_api_token=os.getenv(
-            "RECORD_API_TOKEN",
+            "KG_API_TOKEN",
             "",
         ),
     )

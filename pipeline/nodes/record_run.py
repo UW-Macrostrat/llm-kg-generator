@@ -55,7 +55,7 @@ def build_payload(result, ctx):
         "run_id": f"{ctx.run_id}_s{source.id}",
         "extraction_pipeline_id": ctx.config.extraction_pipeline_id,
         "model_name": model_label,
-        "model_version": ctx.config.model_version,
+        "model_version": ctx.constraints.model_version,
         "results": [
             {
                 "text": {

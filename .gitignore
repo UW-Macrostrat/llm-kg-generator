@@ -7,3 +7,5 @@ build/
 dist/
 runs/
 pipeline_output/
+lith_description_runs/
+glm.md

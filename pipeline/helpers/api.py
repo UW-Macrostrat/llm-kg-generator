@@ -1,5 +1,6 @@
 """Read sources/types, retry repeatable requests, and POST record_run exactly once."""
 import time
+import os
 
 import httpx
 
@@ -110,24 +111,86 @@ def fetch_sources(context) -> list[dict]:
         cursor = page[-1]["id"]
     return rows
 
-
 def submit_record_run(context, payload: dict) -> dict:
     if context.config.dry_run:
         raise RuntimeError("Uploads are disabled in dry-run mode")
+
+    token = context.config.record_api_token.get_secret_value()
+
+    print("[record_run auth]", {
+        "token_set": bool(token),
+        "token_prefix": token[:12] + "..." if token else None,
+        "token_length": len(token),
+    })
+
+    cookies = {
+        "access_token": f"Bearer {token}",
+    }
+
+    print("[record_run cookies]", {
+        "access_token": (
+            cookies["access_token"][:25] + "..."
+            if token
+            else None
+        )
+    })
+
+    import json
+    print("[record_run payload]")
+    print(json.dumps(payload, indent=2))
+
     started = time.monotonic()
-    receipt = {"run_id": payload["run_id"], "started_at": now(), "attempts": 1}
+
+    receipt = {
+        "run_id": payload["run_id"],
+        "started_at": now(),
+        "attempts": 1,
+    }
+
     try:
-        response = context.http.post(context.config.record_run_url, json=payload,
-                                     headers=auth(context.config.record_api_token), follow_redirects=False)
+        response = context.http.post(
+            context.config.record_run_url,
+            json=payload,
+            cookies=cookies,
+            follow_redirects=False,
+        )
+
     except httpx.TransportError as exc:
-        # The server may have committed before a timeout. Do not automatically retry.
-        receipt.update(status="unknown", error=f"{type(exc).__name__}: {exc}")
+        receipt.update(
+            status="unknown",
+            error=f"{type(exc).__name__}: {exc}",
+        )
+
     else:
         try:
             body = response.json()
         except ValueError:
             body = response.text
-        status = "success" if response.is_success else ("unknown" if response.status_code >= 500 else "failed")
-        receipt.update(status=status, status_code=response.status_code, body=body)
-    receipt.update(finished_at=now(), seconds=time.monotonic() - started)
+
+        print("[record_run response]", {
+            "status_code": response.status_code,
+            "body": body,
+        })
+
+        status = (
+            "success"
+            if response.is_success
+            else (
+                "unknown"
+                if response.status_code >= 500
+                else "failed"
+            )
+        )
+
+        receipt.update(
+            status=status,
+            status_code=response.status_code,
+            body=body,
+        )
+
+    receipt.update(
+        finished_at=now(),
+        seconds=time.monotonic() - started,
+    )
+
     return receipt

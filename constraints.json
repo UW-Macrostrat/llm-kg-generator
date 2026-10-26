@@ -1,16 +1,28 @@
 {
-  "version": "1.01",
+  "model_version": "1.0.0",
+
+  "model_id": null,
+  "version_id": null,
+  "extraction_pipeline_id": "0",
+
   "max_entities": 200,
   "max_relations": 200,
   "max_candidates": 10000,
+
   "max_evidence_chars": 1200,
+
   "local_candidates_same_sentence_only": true,
   "local_candidates_max_span_chars": 1200,
+
   "max_incoming_relations": 1,
+
   "allow_cycles": false,
   "allow_self_relations": false,
+
   "evidence_must_include_endpoints": true,
+
   "min_relation_score": 0.0,
+
   "ranking": {
     "same_sentence": 0.5,
     "proximity": 0.3,
