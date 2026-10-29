@@ -1,9 +1,4 @@
 {
-  "status_code": 200,
-  "body": {
-    "success": "Successfully processed the run",
-    "data": {
-      "table_id": "None"
-    }
-  }
+  "status_code": 500,
+  "body": "Internal Server Error"
 }

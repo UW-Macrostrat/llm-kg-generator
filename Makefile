@@ -4,7 +4,7 @@ CONSTRAINTS_FILE := constraints.json
 VENV_PYTHON := /home/david/anaconda3/envs/llm-kg/bin/python
 
 SHORT_ID := 32749
-LONG_ID := 25215
+LONG_ID := 32433
 
 
 .PHONY: short long stack $(addsuffix -short,$(MODELS)) $(addsuffix -long,$(MODELS))

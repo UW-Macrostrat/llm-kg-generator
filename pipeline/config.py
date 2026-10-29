@@ -27,7 +27,7 @@ class Config(BaseModel):
     source_url: str = "https://dev.macrostrat.org/api/pg/kg_source_text"
     entity_url: str = "https://dev.macrostrat.org/api/pg/kg_entity_type"
     relationship_url: str = "https://dev.macrostrat.org/api/pg/kg_relationship_type"
-    record_run_url: str = "http://localhost:9543/record_run" # "https://macrostrat-xdd.dev.svc.macrostrat.org/record_run"
+    record_run_url: str = "https://dev.macrostrat.org/api/v3/knowledge-graph/record_run"
 
     source_api_token: SecretStr = SecretStr("")
     record_api_token: SecretStr = SecretStr("")

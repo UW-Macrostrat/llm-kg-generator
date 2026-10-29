@@ -10,9 +10,11 @@ from pathlib import Path
 import sys
 import urllib.error
 import urllib.request
+from http.cookies import SimpleCookie
 
 LOG = logging.getLogger("test_upload")
-DEFAULT_URL = "https://macrostrat-xdd.dev.svc.macrostrat.org/record_run"
+DEFAULT_URL = "https://dev.macrostrat.org/api/v3/knowledge-graph/record_run"
+SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -70,10 +72,35 @@ def main():
         LOG.info("Local validation passed; database IDs and stored matches were not checked.")
         return 0
 
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    token = os.getenv("RECORD_API_TOKEN", "").strip()
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+
+    # Support the standalone script's variable and the pipeline's variable.
+    token = (
+        os.getenv("RECORD_API_TOKEN", "").strip()
+        or os.getenv("KG_API_TOKEN", "").strip()
+    )
+
     if token:
-        headers["Authorization"] = f"Bearer {token}"
+        # Accept either a raw token or one already prefixed with Bearer.
+        if token.lower().startswith("bearer "):
+            token = token[7:].strip()
+
+        cookies = SimpleCookie()
+        cookies["access_token"] = f"Bearer {token}"
+        headers["Cookie"] = cookies.output(header="", sep="; ").strip()
+
+    secret_key = os.getenv("SECRET_KEY", "").strip()
+    if secret_key:
+        headers["X-Secret-Key"] = secret_key
+
+    LOG.info(
+        "Authentication configured: access_token_cookie=%s, secret_key=%s",
+        bool(token),
+        bool(secret_key),
+    )
     LOG.info("POST %s (one attempt)", args.url)
     try:
         request = urllib.request.Request(args.url, data=raw, headers=headers, method="POST")
