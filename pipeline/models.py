@@ -283,6 +283,8 @@ class RecordRunPayload(Contract):
 class SourceResult(Contract):
     source_id: int
     source: dict[str, Any]
+    # User-supplied paragraph context, not an invented source-text span.
+    strat_name: str | None = None
     status: Literal["pending", "ner_complete", "re_complete", "success", "failed"] = "pending"
     entities: list[Entity] = Field(default_factory=list)
     candidates: list[Candidate] = Field(default_factory=list)

@@ -1,10 +1,11 @@
-"""Node 1: fetch source paragraphs, ontology, and terms for direct matching."""
+"""Node 1: fetch source paragraphs, ontology, and the scoped term dictionary."""
 
 import os
 
 from langgraph.runtime import Runtime
 
 from ..helpers.api import fetch_sources, fetch_types, get_rows
+from ..helpers.dictionary_ner import TERM_TYPES
 from ..models import Ontology, SourceResult, SourceText
 from ..state import Context, PipelineState
 
@@ -19,7 +20,11 @@ def fetch_terms(ctx):
     cursor = None
 
     while True:
-        params = {"order": "macrostrat_terms_id.asc", "limit": 1000}
+        params = {
+            "entity_type": "in.(" + ",".join(TERM_TYPES) + ")",
+            "order": "macrostrat_terms_id.asc",
+            "limit": 1000,
+        }
         if cursor is not None:
             params["macrostrat_terms_id"] = f"gt.{cursor}"
 
@@ -37,6 +42,8 @@ def fetch_terms(ctx):
                 raise ValueError("Macrostrat term IDs must be positive and strictly increasing")
             if not isinstance(term.get("name"), str) or not term["name"].strip():
                 raise ValueError(f"Macrostrat term {term_id} has a missing or blank name")
+            if term.get("entity_type") not in TERM_TYPES:
+                raise ValueError("Macrostrat terms endpoint ignored the entity_type filter")
             terms.append(term)
             cursor = term_id
 
@@ -49,6 +56,22 @@ def pull_resources(state: PipelineState, runtime: Runtime[Context]):
         entity_rows = fetch_types(ctx, ctx.config.entity_url, "entity types")
         relation_rows = fetch_types(ctx, ctx.config.relationship_url, "relationship types")
         ontology = Ontology.from_rows(entity_rows, relation_rows)
+        # NER and downstream relation candidates use only these three types.
+        allowed = set(TERM_TYPES.values())
+        missing = allowed - set(ontology.entity_types)
+        if missing:
+            raise ValueError(f"Ontology is missing required entity types: {sorted(missing)}")
+        entity_types = {
+            name: kind for name, kind in ontology.entity_types.items() if name in allowed
+        }
+        allowed_ids = {kind.id for kind in entity_types.values()}
+        ontology = Ontology(
+            entity_types=entity_types,
+            relationship_types={
+                name: kind for name, kind in ontology.relationship_types.items()
+                if kind.src_entity_type_id in allowed_ids and kind.dst_entity_type_id in allowed_ids
+            },
+        )
 
         macrostrat_terms = fetch_terms(ctx)
         if not macrostrat_terms:
@@ -70,7 +93,10 @@ def pull_resources(state: PipelineState, runtime: Runtime[Context]):
 
     results = []
     for raw in sources:
-        result = SourceResult(source_id=raw["id"], source=raw)
+        result = SourceResult(
+            source_id=raw["id"], source=raw,
+            strat_name=ctx.config.strat_name.strip() if ctx.config.strat_name else None,
+        )
         try:
             result.source = SourceText.model_validate(raw).model_dump(mode="json")
         except Exception as exc:

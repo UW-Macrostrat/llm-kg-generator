@@ -90,7 +90,7 @@ def fetch_sources(context) -> list[dict]:
     rows = []
     if config.source_ids:
         for source_id in sorted(set(config.source_ids)):
-            page = get_rows(context, config.source_url, {"id": f"eq.{source_id}", "limit": 1}, "source_text")
+            page = get_rows(context, config.source_url, {"id": f"eq.{source_id}", "limit": 1}, "kg_source_text")
             if len(page) != 1 or type(page[0].get("id")) is not int or page[0]["id"] != source_id:
                 raise ValueError(f"source_text did not return requested ID {source_id}")
             rows.extend(page)
@@ -101,7 +101,7 @@ def fetch_sources(context) -> list[dict]:
         params = {"order": "id.asc", "limit": limit}
         if cursor is not None:
             params["id"] = f"gt.{cursor}"
-        page = get_rows(context, config.source_url, params, "source_text")
+        page = get_rows(context, config.source_url, params, "kg_source_text")
         if not page:
             break
         if len(page) > limit:

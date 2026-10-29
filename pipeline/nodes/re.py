@@ -267,6 +267,7 @@ def re(state: PipelineState, runtime: Runtime[Context]):
                     state["ontology"],
                     ctx.constraints,
                     text_offset=sentence_start,
+                    strat_name=result.strat_name,
                 )
 
                 raw, call = call_llm(

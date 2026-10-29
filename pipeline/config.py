@@ -24,7 +24,7 @@ class Config(BaseModel):
     llm_api_key: SecretStr = SecretStr("")
 
     # Macrostrat APIs
-    source_url: str = "https://dev.macrostrat.org/api/pg/source_text"
+    source_url: str = "https://dev.macrostrat.org/api/pg/kg_source_text"
     entity_url: str = "https://dev.macrostrat.org/api/pg/kg_entity_type"
     relationship_url: str = "https://dev.macrostrat.org/api/pg/kg_relationship_type"
     record_run_url: str = "http://localhost:9543/record_run" # "https://macrostrat-xdd.dev.svc.macrostrat.org/record_run"
@@ -34,8 +34,12 @@ class Config(BaseModel):
 
     # Input selection
     source_ids: list[int] | None = None
+    strat_name: str | None = None
     after_id: int | None = Field(default=None, ge=0)
     max_sources: int = Field(default=10, ge=1)
+
+    # Optional spelling/OCR suggestions; never automatic entity assignments.
+    fuzzy_threshold: float | None = Field(default=None, gt=0, le=1)
 
     # LLM runtime
     max_tokens: int = Field(default=1024, ge=1)
@@ -64,6 +68,12 @@ class Config(BaseModel):
 
         if self.source_ids and self.after_id is not None:
             raise ValueError("Use --source-id or --after-id, not both")
+
+        if self.strat_name is not None:
+            if not self.strat_name.strip():
+                raise ValueError("--strat-name must not be blank")
+            if self.source_ids is None or len(self.source_ids) != 1:
+                raise ValueError("--strat-name requires exactly one --source-id")
 
         if self.structured_output not in {"vllm", "json_schema", "none"}:
             raise ValueError("Invalid structured_output mode")
@@ -175,6 +185,18 @@ def parse_args(argv=None) -> Config:
     parser.add_argument(
         "--after-id",
         type=int,
+    )
+
+    parser.add_argument(
+        "--strat-name",
+        type=str.strip,
+        help="Known stratigraphic unit for one --source-id; passed as context, not extracted",
+    )
+
+    parser.add_argument(
+        "--fuzzy-threshold",
+        type=float,
+        help="Optional spelling/OCR suggestion threshold in (0, 1], e.g. 0.90",
     )
 
     parser.add_argument(

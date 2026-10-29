@@ -1,11 +1,15 @@
-"""Node 2: extract entities, then validate and ground them deterministically."""
+"""Node 2: dictionary suggestions, LLM review, and occurrence-level grounding."""
 
 from langgraph.runtime import Runtime
 
 from ..helpers.llm import call_llm
-from ..helpers.prompts import ner_prompt
-from ..helpers.validation import decode_response, validate_entities
-from ..helpers.matching import match_entities
+from ..helpers.validation import decode_response
+from ..helpers.dictionary_ner import (
+    prepare_terms,
+    find_dictionary_mentions,
+    dictionary_ner_prompt,
+    validate_dictionary_entities,
+)
 from ..state import Context, PipelineState
 
 
@@ -31,10 +35,16 @@ def ner(state: PipelineState, runtime: Runtime[Context]):
         try:
             text = result.source["paragraph_text"]
 
-            messages, schema = ner_prompt(
-                text,
-                state["ontology"],
-                ctx.constraints,
+            terms = prepare_terms(state["macrostrat_terms"], state["ontology"])
+            suggestions = find_dictionary_mentions(
+                text, terms, fuzzy_min_score=ctx.config.fuzzy_threshold,
+            )
+            messages, schema = dictionary_ner_prompt(
+                text, terms, suggestions, ctx.constraints, strat_name=result.strat_name,
+            )
+            ctx.log.write(
+                f"sources/{result.source_id}/ner_suggestions.json",
+                {"allowed_term_count": len(terms), "suggestions": suggestions},
             )
 
             raw, call = call_llm(
@@ -50,18 +60,17 @@ def ner(state: PipelineState, runtime: Runtime[Context]):
 
             output = decode_response(raw, call)
 
-            # Validate LLM entity predictions and resolve exact source spans.
-            result.entities, rejected = validate_entities(
+            # Validate each occurrence and selected ID without rematching by name.
+            result.entities, rejected, match_stats, grounding = validate_dictionary_entities(
                 output,
                 text,
                 state["ontology"],
                 ctx.constraints,
+                terms,
             )
-
-            # Ground validated entities to Macrostrat terms.
-            match_stats = match_entities(
-                result.entities,
-                state["macrostrat_terms"],
+            ctx.log.write(
+                f"sources/{result.source_id}/ner_grounding.json",
+                {"mentions": grounding, "statistics": match_stats},
             )
 
             result.rejected.extend(rejected)

@@ -1,3 +1,92 @@
+# Macrostrat extraction pipeline — version0
+
+## Current command: model, paragraph ID, and known stratigraphic name
+
+Run from the repository root with your pipeline Python environment:
+
+```bash
+python -m pipeline \
+  --model qwen3 \
+  --source-id 32749 \
+  --strat-name "YOUR STRATIGRAPHIC UNIT NAME" \
+  --constraints constraints.json \
+  --max-tokens 8192 \
+  --structured-output none \
+  --disable-thinking \
+  --dry-run
+```
+
+Replace the sample ID and name with the paragraph and unit you intend to process.
+`--model` supplies the default for both NER and RE; `--ner-model`/`--re-model`
+(including their environment defaults) override it for an individual stage.
+For GLM use `--model glm-5`: the existing LLM helper sends
+`chat_template_kwargs={"reasoning_effort": "low"}`. Qwen uses
+`chat_template_kwargs={"enable_thinking": false}` with `--disable-thinking`.
+`--structured-output none` uses JSON instructions in the prompt without requesting
+server-enforced structured output. `vllm` and `json_schema` remain available.
+`--dry-run` saves results under a new `runs/` directory and performs no upload;
+replace it with `--upload` to submit the supported extraction payload.
+
+The dictionary request filters `kg_macrostrat_terms` with
+`entity_type=in.(liths,lith_atts,environs)` and paginates by `macrostrat_terms_id`
+until the API returns an empty page. There is no fixed 481-record limit.
+These API categories map to ontology types `lith`, `lith_att`, and `environ`.
+No other types or relationship endpoints are extracted in this mode.
+
+NER first finds exact name/alias suggestions, then gives the LLM the complete
+filtered dictionary, suggestions, original paragraph, and supplied unit name.
+Add `--fuzzy-threshold 0.90` for optional spelling/OCR suggestions. The model
+reviews suggestions and finds additional supported mentions. Deterministic
+validation checks exact source occurrences and supplied ID/type membership.
+Repeated mentions are resolved separately, and ambiguous matches retain null IDs.
+Same-name records with identical supplied descriptions/aliases cannot be resolved
+by an arbitrary model ID selection: the validator preserves their ambiguity.
+
+`--strat-name` requires exactly one `--source-id`. It is optional and is saved in
+`run.json`, `results.json`, and `sources/<id>/result.json`, and provided to both
+NER and RE. It is paragraph context, not an extracted `strat_name` entity.
+The paragraph is never prepended or changed to manufacture offsets. The existing
+upload API requires literal spans for every endpoint, so contextual stratigraphic
+names/edges are not inserted into the upload payload. That would require a separate
+API contract for contextual entities. Do not infer such edges from this patch.
+
+Diagnostic files include `ner_suggestions.json`, `ner_grounding.json`, the LLM
+requests/responses, and `result.json` under each source's run directory.
+
+Offline verification (no remote LLM calls or uploads):
+
+```bash
+python -m pytest tests/unit/test_scoped_ner.py -q
+```
+
+### Applying the supplied patch
+
+`version0_scoped_ner.patch` is based on version0 commit
+`1c2e0474d39fc69daa3e670561d7881e35d619ab`. Its paths already start with `pipeline/`;
+do not use `--directory=pipeline` for this patch. From the repository root:
+
+```bash
+git apply --check version0_scoped_ner.patch && git apply version0_scoped_ner.patch
+```
+
+This cumulative patch replaces the earlier `macrostrat_dictionary_ner.patch`.
+If you applied that earlier patch unchanged, first reverse only that patch:
+
+```bash
+git apply --reverse --check --directory=pipeline macrostrat_dictionary_ner.patch && \
+git apply --reverse --directory=pipeline macrostrat_dictionary_ner.patch
+```
+
+If that reverse check fails, keep your local edits and review the differences;
+do not reset or overwrite your working tree to force application.
+
+---
+
+## Historical documentation (older asynchronous implementation)
+
+The material below describes an earlier implementation and is not the current
+`version0` CLI. Use `python -m pipeline --help` and the commands above.
+
 # Macrostrat queued extraction pipeline
 
 This replaces the attached single-paragraph script with a complete asynchronous
