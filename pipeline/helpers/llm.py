@@ -194,6 +194,8 @@ def call_llm(context, stage, source_id, messages, schema):
                 "or lower --max-tokens."
             )
 
+        print(json.dumps(body["messages"], indent=2, ensure_ascii=False))
+
         response, attempts = request(
             context,
             "POST",
